@@ -1,217 +1,310 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Wellhub PM — Live View</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --magenta: #F2496B; --magenta-light: #FFB2C6; --magenta-bg: #FFEBF1;
-      --purple: #A880FF; --purple-light: #DDCCFF; --purple-bg: #F0E0FF; --purple-deep: #5B4191;
-      --lime: #DCFF79; --lime-bg: #F2FFCC; --green: #0C8046;
-      --off-white: #FBF8EC; --cream: #F6EDDF; --cream-dark: #ECE0CD;
-      --dark: #1D1D1F; --white: #FFFFFF; --border: #E8E2D9; --text-secondary: #6B6B6B;
-    }
-    body { font-family: 'Inter', sans-serif; background: var(--off-white); color: var(--dark); display: flex; height: 100vh; overflow: hidden; }
-    .sidebar { width: 240px; min-width: 240px; background: var(--dark); color: var(--white); display: flex; flex-direction: column; padding: 24px 0; overflow-y: auto; }
-    .sidebar-logo { padding: 0 20px 24px; border-bottom: 1px solid rgba(255,255,255,0.1); }
-    .sidebar-logo h1 { font-size: 22px; font-weight: 800; color: var(--magenta); letter-spacing: -0.5px; }
-    .readonly-badge { display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; background: rgba(220,255,121,0.15); color: var(--lime); border-radius: 999px; padding: 2px 8px; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; }
-    .sidebar-section { padding: 20px 12px 0; }
-    .sidebar-section-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; color: rgba(255,255,255,0.3); padding: 0 8px; margin-bottom: 6px; }
-    .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.7); transition: all 0.15s; user-select: none; }
-    .nav-item:hover { background: rgba(255,255,255,0.08); color: var(--white); }
-    .nav-item.active { background: var(--magenta); color: var(--white); }
-    .nav-item .icon { width: 18px; text-align: center; font-size: 15px; }
-    .project-nav-item { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.6); transition: all 0.15s; }
-    .project-nav-item:hover { background: rgba(255,255,255,0.06); color: var(--white); }
-    .project-nav-item.active { color: var(--white); background: rgba(255,255,255,0.1); }
-    .project-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-    .project-name-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .main { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
-    .topbar { display: flex; align-items: center; justify-content: space-between; padding: 16px 28px; background: var(--off-white); border-bottom: 1px solid var(--border); flex-shrink: 0; }
-    .topbar h2 { font-size: 20px; font-weight: 700; }
-    .live-badge { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--green); background: var(--lime-bg); padding: 6px 12px; border-radius: 999px; }
-    .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: blink 2s infinite; }
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
-    .content-area { flex: 1; overflow: auto; padding: 28px; }
-    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
-    .stat-card { background: var(--white); border-radius: 12px; padding: 20px; border: 1.5px solid var(--border); }
-    .stat-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-secondary); margin-bottom: 8px; }
-    .stat-value { font-size: 32px; font-weight: 800; line-height: 1; margin-bottom: 4px; }
-    .stat-sub { font-size: 12px; color: var(--text-secondary); }
-    .stat-card.magenta .stat-value { color: var(--magenta); }
-    .stat-card.purple .stat-value { color: var(--purple-deep); }
-    .stat-card.green .stat-value { color: var(--green); }
-    .section-title { font-size: 16px; font-weight: 700; margin-bottom: 14px; color: var(--dark); }
-    .dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-    .card { background: var(--white); border-radius: 12px; padding: 20px; border: 1.5px solid var(--border); }
-    .projects-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
-    .project-card { background: var(--white); border-radius: 12px; padding: 20px; border: 1.5px solid var(--border); cursor: pointer; transition: all 0.15s; }
-    .project-card:hover { border-color: var(--magenta); transform: translateY(-2px); box-shadow: 0 4px 20px rgba(242,73,107,0.1); }
-    .project-card-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; }
-    .project-color-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; }
-    .project-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
-    .project-card p { font-size: 13px; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.5; }
-    .progress-bar-wrap { background: var(--cream); border-radius: 999px; height: 6px; overflow: hidden; margin-bottom: 8px; }
-    .progress-bar-fill { height: 100%; border-radius: 999px; background: var(--magenta); transition: width 0.3s; }
-    .progress-bar-fill.done { background: var(--green); }
-    .project-meta { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-secondary); font-weight: 500; }
-    .board-container { display: flex; gap: 16px; height: 100%; align-items: flex-start; }
-    .kanban-column { width: 300px; min-width: 300px; background: var(--cream); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; max-height: calc(100vh - 165px); }
-    .column-header { display: flex; align-items: center; margin-bottom: 12px; }
-    .column-title { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; }
-    .column-badge { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 6px; font-size: 12px; font-weight: 700; }
-    .col-todo .column-badge { background: var(--purple-bg); color: var(--purple-deep); }
-    .col-todo .column-title { color: var(--purple-deep); }
-    .col-inprogress .column-badge { background: var(--magenta-bg); color: var(--magenta); }
-    .col-inprogress .column-title { color: var(--magenta); }
-    .col-done .column-badge { background: var(--lime-bg); color: var(--green); }
-    .col-done .column-title { color: var(--green); }
-    .tasks-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; min-height: 60px; }
-    .task-card { background: var(--white); border-radius: 10px; padding: 14px; border: 1.5px solid var(--border); }
-    .task-title { font-size: 14px; font-weight: 600; line-height: 1.4; color: var(--dark); margin-bottom: 6px; }
-    .task-desc { font-size: 12px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 10px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-    .task-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; }
-    .task-tags { display: flex; gap: 6px; flex-wrap: wrap; }
-    .tag { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
-    .tag-priority-high { background: #FFE5E8; color: #C62828; }
-    .tag-priority-medium { background: var(--magenta-bg); color: var(--magenta); }
-    .tag-priority-low { background: var(--lime-bg); color: var(--green); }
-    .tag-due { background: var(--purple-bg); color: var(--purple-deep); }
-    .tag-due.overdue { background: #FFE5E8; color: #C62828; }
-    .tag-due.today { background: #FFF8E1; color: #F57F17; }
-    .task-assignee { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: var(--purple-light); color: var(--purple-deep); font-size: 10px; font-weight: 700; text-transform: uppercase; flex-shrink: 0; }
-    .task-list-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
-    .task-list-item:last-child { border-bottom: none; }
-    .task-list-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-    .task-list-name { flex: 1; font-size: 13px; font-weight: 500; }
-    .task-list-project { font-size: 11px; color: var(--text-secondary); white-space: nowrap; }
-    .task-status-badge { padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; white-space: nowrap; }
-    .status-todo { background: var(--purple-bg); color: var(--purple-deep); }
-    .status-inprogress { background: var(--magenta-bg); color: var(--magenta); }
-    .status-done { background: var(--lime-bg); color: var(--green); }
-    .loading { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 200px; color: var(--text-secondary); gap: 12px; }
-    .spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--magenta); border-radius: 50%; animation: spin 0.8s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .error-box { background: #fff5f5; border: 1.5px solid #ffcdd2; border-radius: 12px; padding: 20px; color: #C62828; font-size: 14px; line-height: 1.6; }
-    ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: var(--cream-dark); border-radius: 999px; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wellhub PM — Live View</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #FBF8EC; color: #1D1D1F; display: flex; height: 100vh; overflow: hidden; }
+
+  /* Sidebar */
+  #sidebar { width: 260px; min-width: 260px; background: #1D1D1F; color: #fff; display: flex; flex-direction: column; overflow-y: auto; }
+  #sidebar-header { padding: 24px 20px 16px; border-bottom: 1px solid #333; }
+  #sidebar-header h1 { font-size: 20px; font-weight: 800; color: #F2496B; }
+  .badge { display: inline-flex; align-items: center; gap: 6px; background: #2a2a2a; border: 1px solid #444; border-radius: 20px; padding: 4px 10px; font-size: 11px; color: #DCFF79; margin-top: 8px; }
+  .badge::before { content: ''; width: 7px; height: 7px; background: #DCFF79; border-radius: 50%; }
+  #sync-status { font-size: 11px; color: #888; padding: 8px 20px; border-bottom: 1px solid #222; }
+  #nav { padding: 12px 0; border-bottom: 1px solid #222; }
+  .nav-label { font-size: 10px; font-weight: 600; color: #666; letter-spacing: .08em; text-transform: uppercase; padding: 0 20px 6px; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 20px; font-size: 14px; font-weight: 500; cursor: pointer; border-radius: 0; transition: background .15s; color: #ccc; }
+  .nav-item:hover { background: #2a2a2a; color: #fff; }
+  .nav-item.active { background: #F2496B; color: #fff; }
+  .nav-item .icon { font-size: 16px; }
+  #project-list { padding: 12px 0; flex: 1; }
+  .proj-label { font-size: 10px; font-weight: 600; color: #666; letter-spacing: .08em; text-transform: uppercase; padding: 0 20px 6px; }
+  .proj-item { display: flex; align-items: center; gap: 8px; padding: 7px 20px; font-size: 13px; cursor: pointer; color: #aaa; transition: background .15s; }
+  .proj-item:hover { background: #2a2a2a; color: #fff; }
+  .proj-item.active { color: #fff; font-weight: 600; }
+  .proj-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+  /* Main */
+  #main { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+  #topbar { padding: 20px 32px 0; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+  #topbar h2 { font-size: 26px; font-weight: 800; }
+  #refresh-btn { background: #1D1D1F; color: #fff; border: none; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  #refresh-btn:hover { background: #333; }
+  #content { padding: 20px 32px 32px; flex: 1; }
+
+  /* Dashboard */
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; margin-bottom: 32px; }
+  .stat-card { background: #fff; border-radius: 12px; padding: 20px; border: 1px solid #e8e3d5; }
+  .stat-card .label { font-size: 12px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
+  .stat-card .value { font-size: 32px; font-weight: 800; }
+
+  /* Kanban */
+  .kanban { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .col { background: #fff; border-radius: 12px; border: 1px solid #e8e3d5; overflow: hidden; }
+  .col-header { padding: 14px 16px; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e8e3d5; }
+  .col-header .col-count { background: #f3f0e8; color: #888; border-radius: 20px; padding: 2px 8px; font-size: 11px; font-weight: 600; }
+  .col-header.todo { color: #888; }
+  .col-header.inprogress { color: #A880FF; }
+  .col-header.done { color: #0C8046; }
+  .col-body { padding: 12px; min-height: 100px; display: flex; flex-direction: column; gap: 10px; }
+
+  /* Task cards */
+  .task-card { background: #FBF8EC; border: 1px solid #e8e3d5; border-radius: 10px; padding: 14px; }
+  .task-title { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+  .task-desc { font-size: 12px; color: #666; margin-bottom: 10px; line-height: 1.4; }
+  .task-meta { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tag { font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 20px; }
+  .tag.high { background: #FFE4E8; color: #c0003c; }
+  .tag.medium { background: #FFF3CD; color: #856404; }
+  .tag.low { background: #d1ecf1; color: #0c5460; }
+  .tag.date { background: #F0E0FF; color: #5B4191; }
+  .tag.assignee { background: #e8f5e9; color: #1b5e20; }
+  .tag.project { color: #fff; }
+
+  /* Project board */
+  .proj-board { display: flex; flex-direction: column; gap: 16px; }
+  .proj-card { background: #fff; border-radius: 12px; border: 1px solid #e8e3d5; padding: 20px; }
+  .proj-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .proj-card-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
+  .proj-card-name { font-size: 16px; font-weight: 700; }
+  .proj-card-desc { font-size: 13px; color: #666; margin-bottom: 14px; }
+  .proj-progress { height: 6px; background: #f3f0e8; border-radius: 3px; overflow: hidden; margin-bottom: 6px; }
+  .proj-progress-bar { height: 100%; border-radius: 3px; background: #F2496B; transition: width .4s; }
+  .proj-stats { font-size: 12px; color: #888; }
+
+  /* Error */
+  .error-box { background: #fff0f3; border: 1px solid #ffc0cb; border-radius: 10px; padding: 16px 20px; color: #c0003c; font-size: 14px; margin-top: 16px; }
+
+  /* Loading */
+  .loading { text-align: center; padding: 60px; color: #888; font-size: 15px; }
+
+  @media (max-width: 900px) {
+    #sidebar { width: 200px; min-width: 200px; }
+    .kanban { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 600px) {
+    body { flex-direction: column; }
+    #sidebar { width: 100%; min-width: unset; height: auto; }
+  }
+</style>
 </head>
 <body>
-<aside class="sidebar">
-  <div class="sidebar-logo">
+
+<div id="sidebar">
+  <div id="sidebar-header">
     <h1>Wellhub PM</h1>
-    <span class="readonly-badge">👁 Read-only view</span>
+    <div class="badge">Read-only view</div>
   </div>
-  <div class="sidebar-section">
-    <div class="sidebar-section-label">Menu</div>
-    <div class="nav-item active" onclick="showView('dashboard')" id="nav-dashboard"><span class="icon">📊</span> Dashboard</div>
-    <div class="nav-item" onclick="showView('projects')" id="nav-projects"><span class="icon">📁</span> All Projects</div>
+  <div id="sync-status">Loading...</div>
+  <div id="nav">
+    <div class="nav-label">Menu</div>
+    <div class="nav-item active" id="nav-dashboard" onclick="showView('dashboard')">
+      <span class="icon">📊</span> Dashboard
+    </div>
+    <div class="nav-item" id="nav-board" onclick="showView('board')">
+      <span class="icon">🗂️</span> All Tasks
+    </div>
+    <div class="nav-item" id="nav-projects" onclick="showView('projects')">
+      <span class="icon">📁</span> All Projects
+    </div>
   </div>
-  <div class="sidebar-section" style="flex:1; margin-top:8px;">
-    <div class="sidebar-section-label">Projects</div>
-    <div id="sidebar-projects"></div>
-  </div>
-</aside>
-<div class="main">
-  <div class="topbar">
-    <h2 id="topbar-title">Dashboard</h2>
-    <div class="live-badge"><span class="live-dot"></span><span id="live-label">Live data</span></div>
-  </div>
-  <div class="content-area" id="content-area">
-    <div class="loading"><div class="spinner"></div><span>Loading data...</span></div>
+  <div id="project-list">
+    <div class="proj-label">Projects</div>
+    <div id="proj-nav-items"></div>
   </div>
 </div>
-<script>
-// ── PASTE YOUR APPS SCRIPT URL BELOW ──────────────────────
-const SCRIPT_URL = 'https://script.google.com/a/macros/gympass.com/s/AKfycbwoM9msIO3xprdsjXBaZyc6Dz6JY3QueNkNsISP8tg4zfYYJjRXcQOi-LkrFYLylU7K/exec';
-// ──────────────────────────────────────────────────────────
 
-let state = { projects: [], tasks: [] };
-let currentView = 'dashboard', currentProjectId = null;
-
-async function fetchData() {
-  if (!SCRIPT_URL || SCRIPT_URL.includes('PASTE')) {
-    document.getElementById('content-area').innerHTML = `<div class="error-box">⚠️ <strong>Setup needed:</strong> Open this HTML file in a text editor and replace <code>PASTE_YOUR_SCRIPT_URL_HERE</code> with your Apps Script URL (see the Setup Guide in your Drive folder).</div>`;
-    return;
-  }
-  try {
-    const res = await fetch(SCRIPT_URL);
-    const data = await res.json();
-    state = data;
-    const now = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
-    document.getElementById('live-label').textContent = `Updated ${now}`;
-    renderContent();
-  } catch(e) {
-    document.getElementById('live-label').textContent = 'Error loading';
-    document.getElementById('content-area').innerHTML = `<div class="error-box">⚠️ Could not load data. Make sure the Apps Script is deployed and the URL is correct.</div>`;
-  }
-}
-
-function showView(view, projectId) {
-  currentView = view; currentProjectId = projectId || null;
-  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-  const navEl = document.getElementById('nav-' + view); if (navEl) navEl.classList.add('active');
-  document.querySelectorAll('.project-nav-item').forEach(el => el.classList.remove('active'));
-  if (projectId) { const pEl = document.getElementById('pnav-' + projectId); if (pEl) pEl.classList.add('active'); }
-  const title = document.getElementById('topbar-title');
-  if (view === 'dashboard') title.textContent = 'Dashboard';
-  else if (view === 'projects') title.textContent = 'All Projects';
-  else if (view === 'board') { const p = state.projects.find(p => p.id === projectId); title.textContent = p ? escHtml(p.name) : 'Board'; }
-  renderContent();
-}
-
-function renderDashboard() {
-  const total=state.tasks.length, done=state.tasks.filter(t=>t.status==='done').length;
-  const inprog=state.tasks.filter(t=>t.status==='inprogress').length;
-  const today=new Date().toISOString().split('T')[0];
-  const dueToday=state.tasks.filter(t=>t.dueDate===today&&t.status!=='done').length;
-  const recent=[...state.tasks].sort((a,b)=>b.createdAt-a.createdAt).slice(0,8);
-  const overdue=state.tasks.filter(t=>t.dueDate&&t.dueDate<today&&t.status!=='done').slice(0,5);
-  return `<div class="stats-grid">
-    <div class="stat-card magenta"><div class="stat-label">Total Tasks</div><div class="stat-value">${total}</div><div class="stat-sub">${state.projects.length} projects</div></div>
-    <div class="stat-card purple"><div class="stat-label">In Progress</div><div class="stat-value">${inprog}</div><div class="stat-sub">active tasks</div></div>
-    <div class="stat-card green"><div class="stat-label">Completed</div><div class="stat-value">${done}</div><div class="stat-sub">${total?Math.round(done/total*100):0}% complete</div></div>
-    <div class="stat-card"><div class="stat-label">Due Today</div><div class="stat-value" style="color:${dueToday>0?'#F57F17':'var(--dark)'}">${dueToday}</div><div class="stat-sub">need attention</div></div>
+<div id="main">
+  <div id="topbar">
+    <h2 id="view-title">Dashboard</h2>
+    <button id="refresh-btn" onclick="loadData()">↻ Refresh</button>
   </div>
-  <div class="dashboard-grid">
-    <div class="card"><div class="section-title">Recent Tasks</div>${recent.length===0?'<p style="font-size:13px;color:var(--text-secondary)">No tasks yet.</p>':recent.map(t=>{const p=state.projects.find(p=>p.id===t.projectId);return`<div class="task-list-item"><span class="task-list-dot" style="background:${p?.color||'#ccc'}"></span><span class="task-list-name">${escHtml(t.title)}</span><span class="task-list-project">${p?escHtml(p.name):''}</span><span class="task-status-badge status-${t.status}">${statusLabel(t.status)}</span></div>`;}).join('')}</div>
-    <div class="card"><div class="section-title">Projects Overview</div>${state.projects.length===0?'<p style="font-size:13px;color:var(--text-secondary)">No projects yet.</p>':state.projects.map(p=>{const pt=state.tasks.filter(t=>t.projectId===p.id);const pct=pt.length?Math.round(pt.filter(t=>t.status==='done').length/pt.length*100):0;return`<div class="task-list-item" onclick="showView('board','${p.id}')" style="cursor:pointer"><span class="task-list-dot" style="background:${p.color}"></span><span class="task-list-name">${escHtml(p.name)}</span><span class="task-list-project">${pt.length} tasks</span><span style="font-size:12px;font-weight:700;color:${pct===100?'var(--green)':'var(--text-secondary)'}">${pct}%</span></div>`;}).join('')}${overdue.length>0?`<div style="margin-top:16px"><div class="section-title" style="color:#C62828;font-size:13px;margin-bottom:8px">⚠ Overdue</div>${overdue.map(t=>`<div class="task-list-item"><span class="task-list-dot" style="background:#C62828"></span><span class="task-list-name">${escHtml(t.title)}</span><span class="task-list-project">${t.dueDate}</span></div>`).join('')}</div>`:''}</div>
-  </div>`;
+  <div id="content"><div class="loading">Loading data...</div></div>
+</div>
+
+<script>
+const SHEET_ID = '1DRcN9KXrHjVo3_31MLKI5cblRxfpFrYCtcSV5DDpsQc';
+
+const state = { projects: [], tasks: [], currentView: 'dashboard', currentProject: null };
+
+function csvUrl(sheet) {
+  return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheet)}`;
 }
 
-function renderProjectsView() {
-  if (!state.projects.length) return `<div style="padding:60px;text-align:center;color:var(--text-secondary)"><div style="font-size:48px;margin-bottom:16px;opacity:0.4">📁</div><p>No projects yet.</p></div>`;
-  return `<div class="projects-grid">${state.projects.map(p=>{const pt=state.tasks.filter(t=>t.projectId===p.id);const pct=pt.length?Math.round(pt.filter(t=>t.status==='done').length/pt.length*100):0;return`<div class="project-card" onclick="showView('board','${p.id}')"><div class="project-card-header"><div><h3>${escHtml(p.name)}</h3><p>${escHtml(p.description||'No description')}</p></div><span class="project-color-dot" style="background:${p.color}"></span></div><div class="progress-bar-wrap"><div class="progress-bar-fill ${pct===100?'done':''}" style="width:${pct}%"></div></div><div class="project-meta"><span>${pt.length} tasks</span><span>${pct}% complete</span></div></div>`;}).join('')}</div>`;
+function parseCSV(text, cols) {
+  const lines = [];
+  let cur = '', inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (c === '"') { inQ = !inQ; }
+    else if (c === '\n' && !inQ) { lines.push(cur); cur = ''; }
+    else { cur += c; }
+  }
+  if (cur) lines.push(cur);
+
+  return lines.slice(1).filter(l => l.trim()).map(line => {
+    const vals = [], re = /("(?:[^"]|"")*"|[^,]*)(,|$)/g;
+    let m;
+    while ((m = re.exec(line)) !== null) {
+      let v = m[1];
+      if (v.startsWith('"') && v.endsWith('"')) v = v.slice(1, -1).replace(/""/g, '"');
+      vals.push(v.trim());
+      if (m[2] === '') break;
+    }
+    const obj = {};
+    cols.forEach((c, i) => obj[c] = vals[i] || '');
+    return obj;
+  }).filter(r => r[cols[0]]);
 }
 
-function renderBoard() {
-  const cols=[{id:'todo',label:'To Do',cls:'col-todo'},{id:'inprogress',label:'In Progress',cls:'col-inprogress'},{id:'done',label:'Done',cls:'col-done'}];
-  const pt=state.tasks.filter(t=>t.projectId===currentProjectId);
-  return `<div class="board-container">${cols.map(col=>{const tasks=pt.filter(t=>t.status===col.id);return`<div class="kanban-column ${col.cls}"><div class="column-header"><div class="column-title"><span class="column-badge">${tasks.length}</span>${col.label}</div></div><div class="tasks-list">${tasks.map(t=>{const today=new Date().toISOString().split('T')[0];let dc='tag-due';if(t.dueDate&&t.status!=='done'){if(t.dueDate<today)dc='tag-due overdue';else if(t.dueDate===today)dc='tag-due today';}const ini=t.assignee?t.assignee.trim().split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase():'';return`<div class="task-card"><div class="task-title">${escHtml(t.title)}</div>${t.description?`<div class="task-desc">${escHtml(t.description)}</div>`:''}<div class="task-footer"><div class="task-tags"><span class="tag tag-priority-${t.priority}">${t.priority}</span>${t.dueDate?`<span class="tag ${dc}">📅 ${formatDate(t.dueDate)}</span>`:''}</div>${ini?`<span class="task-assignee" title="${escHtml(t.assignee)}">${ini}</span>`:''}</div></div>`;}).join('')}</div></div>`;}).join('')}</div>`;
-}
-
-function renderContent() {
-  const area=document.getElementById('content-area');
-  if(currentView==='dashboard') area.innerHTML=renderDashboard();
-  else if(currentView==='projects') area.innerHTML=renderProjectsView();
-  else if(currentView==='board'){const p=state.projects.find(p=>p.id===currentProjectId);if(!p){showView('projects');return;}area.innerHTML=renderBoard();}
-  renderSidebar();
+async function loadData() {
+  document.getElementById('sync-status').textContent = 'Syncing...';
+  try {
+    const [pr, tr] = await Promise.all([
+      fetch(csvUrl('Projects')),
+      fetch(csvUrl('Tasks'))
+    ]);
+    if (!pr.ok || !tr.ok) throw new Error('HTTP error');
+    const [pc, tc] = await Promise.all([pr.text(), tr.text()]);
+    state.projects = parseCSV(pc, ['id','name','description','color','createdAt']);
+    state.tasks    = parseCSV(tc, ['id','projectId','title','description','status','priority','dueDate','assignee','createdAt']);
+    const now = new Date().toLocaleTimeString();
+    document.getElementById('sync-status').textContent = `Last synced: ${now}`;
+    renderSidebar();
+    renderView();
+  } catch (e) {
+    document.getElementById('sync-status').textContent = 'Sync failed';
+    document.getElementById('content').innerHTML =
+      `<div class="error-box">⚠️ Could not load data. Make sure the Google Sheet is shared as "Anyone with the link can view".<br><br><small>${e.message}</small></div>`;
+  }
 }
 
 function renderSidebar() {
-  document.getElementById('sidebar-projects').innerHTML=state.projects.map(p=>`<div class="project-nav-item ${currentProjectId===p.id?'active':''}" id="pnav-${p.id}" onclick="showView('board','${p.id}')"><span class="project-dot" style="background:${p.color}"></span><span class="project-name-text">${escHtml(p.name)}</span></div>`).join('');
+  const nav = document.getElementById('proj-nav-items');
+  nav.innerHTML = state.projects.map(p => `
+    <div class="proj-item ${state.currentProject === p.id ? 'active' : ''}" onclick="showProject('${p.id}')">
+      <span class="proj-dot" style="background:${p.color || '#A880FF'}"></span>
+      ${esc(p.name)}
+    </div>`).join('');
 }
 
-function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-function statusLabel(s){return{todo:'To Do',inprogress:'In Progress',done:'Done'}[s]||s;}
-function formatDate(d){if(!d)return'';const[,m,day]=d.split('-');return`${day}/${m}`;}
+function showView(v) {
+  state.currentView = v;
+  state.currentProject = null;
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  document.getElementById('nav-' + v)?.classList.add('active');
+  document.querySelectorAll('.proj-item').forEach(el => el.classList.remove('active'));
+  const titles = { dashboard: 'Dashboard', board: 'All Tasks', projects: 'All Projects' };
+  document.getElementById('view-title').textContent = titles[v] || v;
+  renderView();
+}
 
-fetchData();
-setInterval(fetchData, 60000);
+function showProject(id) {
+  state.currentView = 'project';
+  state.currentProject = id;
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.proj-item').forEach(el => el.classList.remove('active'));
+  const p = state.projects.find(x => x.id === id);
+  document.getElementById('view-title').textContent = p ? p.name : 'Project';
+  document.querySelectorAll('.proj-item').forEach(el => {
+    if (el.textContent.trim() === (p ? p.name : '')) el.classList.add('active');
+  });
+  renderView();
+}
+
+function renderView() {
+  const c = document.getElementById('content');
+  if (state.currentView === 'dashboard') c.innerHTML = renderDashboard();
+  else if (state.currentView === 'board') c.innerHTML = renderBoard(state.tasks);
+  else if (state.currentView === 'projects') c.innerHTML = renderProjects();
+  else if (state.currentView === 'project') {
+    const tasks = state.tasks.filter(t => t.projectId === state.currentProject);
+    c.innerHTML = renderBoard(tasks);
+  }
+}
+
+function renderDashboard() {
+  const total = state.tasks.length;
+  const done  = state.tasks.filter(t => t.status === 'done').length;
+  const prog  = state.tasks.filter(t => t.status === 'inprogress').length;
+  const todo  = state.tasks.filter(t => t.status === 'todo').length;
+  const today = new Date().toISOString().split('T')[0];
+  const overdue = state.tasks.filter(t => t.dueDate && t.dueDate < today && t.status !== 'done').length;
+
+  return `
+    <div class="stat-grid">
+      <div class="stat-card"><div class="label">Total Tasks</div><div class="value">${total}</div></div>
+      <div class="stat-card"><div class="label">To Do</div><div class="value" style="color:#888">${todo}</div></div>
+      <div class="stat-card"><div class="label">In Progress</div><div class="value" style="color:#A880FF">${prog}</div></div>
+      <div class="stat-card"><div class="label">Done</div><div class="value" style="color:#0C8046">${done}</div></div>
+      <div class="stat-card"><div class="label">Projects</div><div class="value" style="color:#F2496B">${state.projects.length}</div></div>
+      <div class="stat-card"><div class="label">Overdue</div><div class="value" style="color:${overdue>0?'#c0003c':'#888'}">${overdue}</div></div>
+    </div>
+    ${state.projects.length === 0 ? '<p style="color:#888;font-size:14px">No projects yet. Add them using the Editor app.</p>' : renderProjects()}
+  `;
+}
+
+function renderBoard(tasks) {
+  const cols = [
+    { key: 'todo',       label: 'To Do',       cls: 'todo' },
+    { key: 'inprogress', label: 'In Progress',  cls: 'inprogress' },
+    { key: 'done',       label: 'Done',         cls: 'done' },
+  ];
+  if (tasks.length === 0) return '<p style="color:#888;font-size:14px;margin-top:8px">No tasks here yet.</p>';
+  return `<div class="kanban">${cols.map(col => {
+    const colTasks = tasks.filter(t => t.status === col.key);
+    return `<div class="col">
+      <div class="col-header ${col.cls}">${col.label} <span class="col-count">${colTasks.length}</span></div>
+      <div class="col-body">${colTasks.map(t => renderCard(t)).join('') || '<p style="font-size:12px;color:#aaa;text-align:center;padding:16px 0">Empty</p>'}</div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function renderCard(t) {
+  const proj = state.projects.find(p => p.id === t.projectId);
+  const today = new Date().toISOString().split('T')[0];
+  const isOverdue = t.dueDate && t.dueDate < today && t.status !== 'done';
+  return `<div class="task-card">
+    <div class="task-title">${esc(t.title)}</div>
+    ${t.description ? `<div class="task-desc">${esc(t.description)}</div>` : ''}
+    <div class="task-meta">
+      ${t.priority ? `<span class="tag ${t.priority}">${t.priority.charAt(0).toUpperCase()+t.priority.slice(1)}</span>` : ''}
+      ${t.dueDate ? `<span class="tag date" style="${isOverdue?'background:#FFE4E8;color:#c0003c':''}">📅 ${t.dueDate}</span>` : ''}
+      ${t.assignee ? `<span class="tag assignee">👤 ${esc(t.assignee)}</span>` : ''}
+      ${proj ? `<span class="tag project" style="background:${proj.color||'#A880FF'}">${esc(proj.name)}</span>` : ''}
+    </div>
+  </div>`;
+}
+
+function renderProjects() {
+  if (state.projects.length === 0) return '<p style="color:#888;font-size:14px">No projects yet.</p>';
+  return `<div class="proj-board">${state.projects.map(p => {
+    const tasks = state.tasks.filter(t => t.projectId === p.id);
+    const done  = tasks.filter(t => t.status === 'done').length;
+    const pct   = tasks.length ? Math.round(done/tasks.length*100) : 0;
+    return `<div class="proj-card">
+      <div class="proj-card-header">
+        <span class="proj-card-dot" style="background:${p.color||'#A880FF'}"></span>
+        <span class="proj-card-name">${esc(p.name)}</span>
+      </div>
+      ${p.description ? `<div class="proj-card-desc">${esc(p.description)}</div>` : ''}
+      <div class="proj-progress"><div class="proj-progress-bar" style="width:${pct}%;background:${p.color||'#F2496B'}"></div></div>
+      <div class="proj-stats">${done}/${tasks.length} tasks done (${pct}%)</div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+loadData();
+setInterval(loadData, 60000);
 </script>
 </body>
 </html>
