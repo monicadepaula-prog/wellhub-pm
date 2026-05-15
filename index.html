@@ -9,7 +9,6 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Inter', sans-serif; background: #FBF8EC; color: #1D1D1F; display: flex; height: 100vh; overflow: hidden; }
 
-  /* Sidebar */
   #sidebar { width: 260px; min-width: 260px; background: #1D1D1F; color: #fff; display: flex; flex-direction: column; overflow-y: auto; }
   #sidebar-header { padding: 24px 20px 16px; border-bottom: 1px solid #333; }
   #sidebar-header h1 { font-size: 20px; font-weight: 800; color: #F2496B; }
@@ -18,7 +17,7 @@
   #sync-status { font-size: 11px; color: #888; padding: 8px 20px; border-bottom: 1px solid #222; }
   #nav { padding: 12px 0; border-bottom: 1px solid #222; }
   .nav-label { font-size: 10px; font-weight: 600; color: #666; letter-spacing: .08em; text-transform: uppercase; padding: 0 20px 6px; }
-  .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 20px; font-size: 14px; font-weight: 500; cursor: pointer; border-radius: 0; transition: background .15s; color: #ccc; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 20px; font-size: 14px; font-weight: 500; cursor: pointer; transition: background .15s; color: #ccc; }
   .nav-item:hover { background: #2a2a2a; color: #fff; }
   .nav-item.active { background: #F2496B; color: #fff; }
   .nav-item .icon { font-size: 16px; }
@@ -29,7 +28,6 @@
   .proj-item.active { color: #fff; font-weight: 600; }
   .proj-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
 
-  /* Main */
   #main { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
   #topbar { padding: 20px 32px 0; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
   #topbar h2 { font-size: 26px; font-weight: 800; }
@@ -37,13 +35,11 @@
   #refresh-btn:hover { background: #333; }
   #content { padding: 20px 32px 32px; flex: 1; }
 
-  /* Dashboard */
   .stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; margin-bottom: 32px; }
   .stat-card { background: #fff; border-radius: 12px; padding: 20px; border: 1px solid #e8e3d5; }
   .stat-card .label { font-size: 12px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
   .stat-card .value { font-size: 32px; font-weight: 800; }
 
-  /* Kanban */
   .kanban { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
   .col { background: #fff; border-radius: 12px; border: 1px solid #e8e3d5; overflow: hidden; }
   .col-header { padding: 14px 16px; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e8e3d5; }
@@ -53,7 +49,6 @@
   .col-header.done { color: #0C8046; }
   .col-body { padding: 12px; min-height: 100px; display: flex; flex-direction: column; gap: 10px; }
 
-  /* Task cards */
   .task-card { background: #FBF8EC; border: 1px solid #e8e3d5; border-radius: 10px; padding: 14px; }
   .task-title { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
   .task-desc { font-size: 12px; color: #666; margin-bottom: 10px; line-height: 1.4; }
@@ -66,7 +61,6 @@
   .tag.assignee { background: #e8f5e9; color: #1b5e20; }
   .tag.project { color: #fff; }
 
-  /* Project board */
   .proj-board { display: flex; flex-direction: column; gap: 16px; }
   .proj-card { background: #fff; border-radius: 12px; border: 1px solid #e8e3d5; padding: 20px; }
   .proj-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
@@ -77,19 +71,12 @@
   .proj-progress-bar { height: 100%; border-radius: 3px; background: #F2496B; transition: width .4s; }
   .proj-stats { font-size: 12px; color: #888; }
 
-  /* Error */
   .error-box { background: #fff0f3; border: 1px solid #ffc0cb; border-radius: 10px; padding: 16px 20px; color: #c0003c; font-size: 14px; margin-top: 16px; }
-
-  /* Loading */
   .loading { text-align: center; padding: 60px; color: #888; font-size: 15px; }
 
   @media (max-width: 900px) {
     #sidebar { width: 200px; min-width: 200px; }
     .kanban { grid-template-columns: 1fr; }
-  }
-  @media (max-width: 600px) {
-    body { flex-direction: column; }
-    #sidebar { width: 100%; min-width: unset; height: auto; }
   }
 </style>
 </head>
@@ -128,65 +115,29 @@
 </div>
 
 <script>
-const SHEET_ID = '1DRcN9KXrHjVo3_31MLKI5cblRxfpFrYCtcSV5DDpsQc';
-
 const state = { projects: [], tasks: [], currentView: 'dashboard', currentProject: null };
-
-function csvUrl(sheet) {
-  return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheet)}`;
-}
-
-function parseCSV(text, cols) {
-  const lines = [];
-  let cur = '', inQ = false;
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i];
-    if (c === '"') { inQ = !inQ; }
-    else if (c === '\n' && !inQ) { lines.push(cur); cur = ''; }
-    else { cur += c; }
-  }
-  if (cur) lines.push(cur);
-
-  return lines.slice(1).filter(l => l.trim()).map(line => {
-    const vals = [], re = /("(?:[^"]|"")*"|[^,]*)(,|$)/g;
-    let m;
-    while ((m = re.exec(line)) !== null) {
-      let v = m[1];
-      if (v.startsWith('"') && v.endsWith('"')) v = v.slice(1, -1).replace(/""/g, '"');
-      vals.push(v.trim());
-      if (m[2] === '') break;
-    }
-    const obj = {};
-    cols.forEach((c, i) => obj[c] = vals[i] || '');
-    return obj;
-  }).filter(r => r[cols[0]]);
-}
 
 async function loadData() {
   document.getElementById('sync-status').textContent = 'Syncing...';
   try {
-    const [pr, tr] = await Promise.all([
-      fetch(csvUrl('Projects')),
-      fetch(csvUrl('Tasks'))
-    ]);
-    if (!pr.ok || !tr.ok) throw new Error('HTTP error');
-    const [pc, tc] = await Promise.all([pr.text(), tr.text()]);
-    state.projects = parseCSV(pc, ['id','name','description','color','createdAt']);
-    state.tasks    = parseCSV(tc, ['id','projectId','title','description','status','priority','dueDate','assignee','createdAt']);
+    const res = await fetch('./data.json?t=' + Date.now());
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    state.projects = data.projects || [];
+    state.tasks    = data.tasks    || [];
     const now = new Date().toLocaleTimeString();
-    document.getElementById('sync-status').textContent = `Last synced: ${now}`;
+    document.getElementById('sync-status').textContent = 'Last synced: ' + now;
     renderSidebar();
     renderView();
   } catch (e) {
     document.getElementById('sync-status').textContent = 'Sync failed';
     document.getElementById('content').innerHTML =
-      `<div class="error-box">⚠️ Could not load data. Make sure the Google Sheet is shared as "Anyone with the link can view".<br><br><small>${e.message}</small></div>`;
+      `<div class="error-box">⚠️ Could not load data.json.<br><br><small>${e.message}</small></div>`;
   }
 }
 
 function renderSidebar() {
-  const nav = document.getElementById('proj-nav-items');
-  nav.innerHTML = state.projects.map(p => `
+  document.getElementById('proj-nav-items').innerHTML = state.projects.map(p => `
     <div class="proj-item ${state.currentProject === p.id ? 'active' : ''}" onclick="showProject('${p.id}')">
       <span class="proj-dot" style="background:${p.color || '#A880FF'}"></span>
       ${esc(p.name)}
@@ -211,9 +162,7 @@ function showProject(id) {
   document.querySelectorAll('.proj-item').forEach(el => el.classList.remove('active'));
   const p = state.projects.find(x => x.id === id);
   document.getElementById('view-title').textContent = p ? p.name : 'Project';
-  document.querySelectorAll('.proj-item').forEach(el => {
-    if (el.textContent.trim() === (p ? p.name : '')) el.classList.add('active');
-  });
+  renderSidebar();
   renderView();
 }
 
@@ -222,20 +171,16 @@ function renderView() {
   if (state.currentView === 'dashboard') c.innerHTML = renderDashboard();
   else if (state.currentView === 'board') c.innerHTML = renderBoard(state.tasks);
   else if (state.currentView === 'projects') c.innerHTML = renderProjects();
-  else if (state.currentView === 'project') {
-    const tasks = state.tasks.filter(t => t.projectId === state.currentProject);
-    c.innerHTML = renderBoard(tasks);
-  }
+  else if (state.currentView === 'project') c.innerHTML = renderBoard(state.tasks.filter(t => t.projectId === state.currentProject));
 }
 
 function renderDashboard() {
-  const total = state.tasks.length;
-  const done  = state.tasks.filter(t => t.status === 'done').length;
-  const prog  = state.tasks.filter(t => t.status === 'inprogress').length;
-  const todo  = state.tasks.filter(t => t.status === 'todo').length;
-  const today = new Date().toISOString().split('T')[0];
+  const total   = state.tasks.length;
+  const done    = state.tasks.filter(t => t.status === 'done').length;
+  const prog    = state.tasks.filter(t => t.status === 'inprogress').length;
+  const todo    = state.tasks.filter(t => t.status === 'todo').length;
+  const today   = new Date().toISOString().split('T')[0];
   const overdue = state.tasks.filter(t => t.dueDate && t.dueDate < today && t.status !== 'done').length;
-
   return `
     <div class="stat-grid">
       <div class="stat-card"><div class="label">Total Tasks</div><div class="value">${total}</div></div>
@@ -243,40 +188,39 @@ function renderDashboard() {
       <div class="stat-card"><div class="label">In Progress</div><div class="value" style="color:#A880FF">${prog}</div></div>
       <div class="stat-card"><div class="label">Done</div><div class="value" style="color:#0C8046">${done}</div></div>
       <div class="stat-card"><div class="label">Projects</div><div class="value" style="color:#F2496B">${state.projects.length}</div></div>
-      <div class="stat-card"><div class="label">Overdue</div><div class="value" style="color:${overdue>0?'#c0003c':'#888'}">${overdue}</div></div>
+      <div class="stat-card"><div class="label">Overdue</div><div class="value" style="color:${overdue > 0 ? '#c0003c' : '#888'}">${overdue}</div></div>
     </div>
-    ${state.projects.length === 0 ? '<p style="color:#888;font-size:14px">No projects yet. Add them using the Editor app.</p>' : renderProjects()}
-  `;
+    ${state.projects.length === 0 ? '<p style="color:#888;font-size:14px">No data yet. Publish from the Editor app to see tasks here.</p>' : renderProjects()}`;
 }
 
 function renderBoard(tasks) {
-  const cols = [
-    { key: 'todo',       label: 'To Do',       cls: 'todo' },
-    { key: 'inprogress', label: 'In Progress',  cls: 'inprogress' },
-    { key: 'done',       label: 'Done',         cls: 'done' },
-  ];
   if (tasks.length === 0) return '<p style="color:#888;font-size:14px;margin-top:8px">No tasks here yet.</p>';
+  const cols = [
+    { key: 'todo',       label: 'To Do',      cls: 'todo' },
+    { key: 'inprogress', label: 'In Progress', cls: 'inprogress' },
+    { key: 'done',       label: 'Done',        cls: 'done' },
+  ];
   return `<div class="kanban">${cols.map(col => {
-    const colTasks = tasks.filter(t => t.status === col.key);
+    const ct = tasks.filter(t => t.status === col.key);
     return `<div class="col">
-      <div class="col-header ${col.cls}">${col.label} <span class="col-count">${colTasks.length}</span></div>
-      <div class="col-body">${colTasks.map(t => renderCard(t)).join('') || '<p style="font-size:12px;color:#aaa;text-align:center;padding:16px 0">Empty</p>'}</div>
+      <div class="col-header ${col.cls}">${col.label} <span class="col-count">${ct.length}</span></div>
+      <div class="col-body">${ct.map(renderCard).join('') || '<p style="font-size:12px;color:#aaa;text-align:center;padding:16px 0">Empty</p>'}</div>
     </div>`;
   }).join('')}</div>`;
 }
 
 function renderCard(t) {
-  const proj = state.projects.find(p => p.id === t.projectId);
-  const today = new Date().toISOString().split('T')[0];
-  const isOverdue = t.dueDate && t.dueDate < today && t.status !== 'done';
+  const proj    = state.projects.find(p => p.id === t.projectId);
+  const today   = new Date().toISOString().split('T')[0];
+  const overdue = t.dueDate && t.dueDate < today && t.status !== 'done';
   return `<div class="task-card">
     <div class="task-title">${esc(t.title)}</div>
     ${t.description ? `<div class="task-desc">${esc(t.description)}</div>` : ''}
     <div class="task-meta">
       ${t.priority ? `<span class="tag ${t.priority}">${t.priority.charAt(0).toUpperCase()+t.priority.slice(1)}</span>` : ''}
-      ${t.dueDate ? `<span class="tag date" style="${isOverdue?'background:#FFE4E8;color:#c0003c':''}">📅 ${t.dueDate}</span>` : ''}
-      ${t.assignee ? `<span class="tag assignee">👤 ${esc(t.assignee)}</span>` : ''}
-      ${proj ? `<span class="tag project" style="background:${proj.color||'#A880FF'}">${esc(proj.name)}</span>` : ''}
+      ${t.dueDate   ? `<span class="tag date" style="${overdue ? 'background:#FFE4E8;color:#c0003c' : ''}">📅 ${t.dueDate}</span>` : ''}
+      ${t.assignee  ? `<span class="tag assignee">👤 ${esc(t.assignee)}</span>` : ''}
+      ${proj        ? `<span class="tag project" style="background:${proj.color||'#A880FF'}">${esc(proj.name)}</span>` : ''}
     </div>
   </div>`;
 }
@@ -286,7 +230,7 @@ function renderProjects() {
   return `<div class="proj-board">${state.projects.map(p => {
     const tasks = state.tasks.filter(t => t.projectId === p.id);
     const done  = tasks.filter(t => t.status === 'done').length;
-    const pct   = tasks.length ? Math.round(done/tasks.length*100) : 0;
+    const pct   = tasks.length ? Math.round(done / tasks.length * 100) : 0;
     return `<div class="proj-card">
       <div class="proj-card-header">
         <span class="proj-card-dot" style="background:${p.color||'#A880FF'}"></span>
