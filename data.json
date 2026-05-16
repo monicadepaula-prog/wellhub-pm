@@ -1,4 +1,24 @@
 {
-  "projects": [],
-  "tasks": []
+  "projects": [
+    {
+      "id": "mp7kl9ksxdrw9f656zs",
+      "name": "Project Beyond",
+      "description": "",
+      "color": "#c0003c",
+      "createdAt": "2026-05-15T23:50:16.252Z"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "mp7klwdezi1dh68f7q",
+      "title": "Test",
+      "description": "",
+      "projectId": "mp7kl9ksxdrw9f656zs",
+      "status": "inprogress",
+      "priority": "medium",
+      "dueDate": "2026-05-25",
+      "assignee": "Moni",
+      "createdAt": "2026-05-15T23:50:45.794Z"
+    }
+  ]
 }
